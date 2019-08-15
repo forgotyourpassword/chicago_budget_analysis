@@ -1,8 +1,19 @@
 ---
-title: "Chicago Budget"
+title: "Chicago Budget Analysis"
 author: "Michael Molloy"
-date: "6/12/2019"
-output: html_document
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_folding: hide
+    highlight: tango
+    number_sections: yes
+    theme: cerulean
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+    includes:
+          after_body: "./assets/html/footer.html"
+    
 ---
 
 ```{r setup, include=FALSE}
@@ -20,21 +31,23 @@ Source data was exported from the Chicago data portal into CSV format. Each file
 
 ```{r}
 # read data
-budget_2011 <- read_csv("../input/source/chicago_budget/Budget_-_2011_Budget_Ordinance_-_Positions_and_Salaries.csv") %>% mutate(YEAR = 2011)
-budget_2012 <- read_csv("../input/source/chicago_budget/Budget_-_2012_Budget_Ordinance_-_Positions_and_Salaries.csv") %>% mutate(YEAR = 2012)
-budget_2013 <- read_csv("../input/source/chicago_budget/Budget_-_2013_Budget_Ordinance_-_Positions_and_Salaries.csv") %>% mutate(YEAR = 2013)
-budget_2014 <- read_csv("../input/source/chicago_budget/Budget_-_2014_Budget_Ordinance_-_Positions_and_Salaries.csv") %>% mutate(YEAR = 2014)
-budget_2015 <- read_csv("../input/source/chicago_budget/Budget_-_2015_Budget_Ordinance_-_Positions_and_Salaries.csv") %>% mutate(YEAR = 2015)
-budget_2016 <- read_csv("../input/source/chicago_budget/Budget_-_2016_Budget_Ordinance_-_Positions_and_Salaries.csv") %>% mutate(YEAR = 2016)
-budget_2017 <- read_csv("../input/source/chicago_budget/Budget_-_2017_Budget_Ordinance_-_Positions_and_Salaries.csv") %>% mutate(YEAR = 2017)
-budget_2018 <- read_csv("../input/source/chicago_budget/Budget_-_2018_Budget_Ordinance_-_Positions_and_Salaries.csv") %>% mutate(YEAR = 2018)
-budget_2019 <- read_csv("../input/source/chicago_budget/Budget_-_2019_Budget_Ordinance_-_Positions_and_Salaries.csv") %>% mutate(YEAR = 2019)
+budget_2011 <- read_csv("./input/source/chicago_budget/Budget_-_2011_Budget_Ordinance_-_Positions_and_Salaries.csv") %>% mutate(YEAR = 2011)
+budget_2012 <- read_csv("./input/source/chicago_budget/Budget_-_2012_Budget_Ordinance_-_Positions_and_Salaries.csv") %>% mutate(YEAR = 2012)
+budget_2013 <- read_csv("./input/source/chicago_budget/Budget_-_2013_Budget_Ordinance_-_Positions_and_Salaries.csv") %>% mutate(YEAR = 2013)
+budget_2014 <- read_csv("./input/source/chicago_budget/Budget_-_2014_Budget_Ordinance_-_Positions_and_Salaries.csv") %>% mutate(YEAR = 2014)
+budget_2015 <- read_csv("./input/source/chicago_budget/Budget_-_2015_Budget_Ordinance_-_Positions_and_Salaries.csv") %>% mutate(YEAR = 2015)
+budget_2016 <- read_csv("./input/source/chicago_budget/Budget_-_2016_Budget_Ordinance_-_Positions_and_Salaries.csv") %>% mutate(YEAR = 2016)
+budget_2017 <- read_csv("./input/source/chicago_budget/Budget_-_2017_Budget_Ordinance_-_Positions_and_Salaries.csv") %>% mutate(YEAR = 2017)
+budget_2018 <- read_csv("./input/source/chicago_budget/Budget_-_2018_Budget_Ordinance_-_Positions_and_Salaries.csv") %>% mutate(YEAR = 2018)
+budget_2019 <- read_csv("./input/source/chicago_budget/Budget_-_2019_Budget_Ordinance_-_Positions_and_Salaries.csv") %>% mutate(YEAR = 2019)
 ```
+
 # Data Wrangling
 Before any analysis can be performed on the dataset we need to tidy up the data. 
 
 ## Add Missing Columns
 The first problem we encounter is mismatched and/or missing column names. Once we make it so all of the column names match, we can bind each year's dataset together into a single dataframe.
+
 ```{r}
 # add columns to years where they're missing
   #2011
@@ -83,10 +96,11 @@ budget %>%
 ```
 
 To make it so the department names are consistent across years, we create a CSV file to map the original text and the text we want to change it to. Then a for loop is used to go through every record in the dataset to find and replace based on our mapping CSV file.
+
 ```{r}
 # make department names consistent
   ## load the mapping table
-  DepartmentNameMap <- read.csv("../input/source/chicago_budget/Department Mapping Table.csv",stringsAsFactors = F)
+  DepartmentNameMap <- read.csv("./input/source/chicago_budget/Department Mapping Table.csv",stringsAsFactors = F)
 
   ## use the mapping table to replace the production data
     for (row in 1:NROW(DepartmentNameMap)) {
@@ -95,6 +109,7 @@ To make it so the department names are consistent across years, we create a CSV 
       budget$`DEPARTMENT DESCRIPTION` <- str_replace(budget$`DEPARTMENT DESCRIPTION`,from,to)
     }
 ```
+
 ## Mismatched Job Titles
 For every position there is a human readable job title ("Title Description") and a unique code ("Title Code").  We can group the records by Title Code to see which codes have multiple human readable names.  The histogram below shows that while most title codes have only one human readable job title, some have two or three. These will need to be cleaned up.
 ```{r}
@@ -106,6 +121,7 @@ budget %>%
   geom_histogram(bins = 3) +
   labs(title = "Mismatched Title Names", subtitle = "Chicago Budget Data 2011-2019", x= "Same Title Code",y="# of Title Names")
 ```
+
 ### Matching Approach
 The first thing we do is capture all of the Job Codes that have multiple titles associated with them.
 
@@ -135,7 +151,7 @@ Then, using a for loop, we can replace the Job Title for every record that match
 ```{r}
  # make job titles consistent
   ## load the mapping table
- JobTitleMap <- read_csv("../input/source/chicago_budget/Job Title Mapping Table.csv")
+ JobTitleMap <- read_csv("./input/source/chicago_budget/Job Title Mapping Table.csv")
 
 
   ## use the mapping table to replace the production data
@@ -149,9 +165,10 @@ Then, using a for loop, we can replace the Job Title for every record that match
 
 ## Saving the Data
 Once we've finished with our data wrangling we can save our tidy data to a single RDS file and begin our analysis.
+
 ```{r}
 # write the output file
-write_rds(budget,"../input/source/chicago_budget/Chicago Budget.Rds")
+write_rds(budget,"./input/source/chicago_budget/Chicago Budget.Rds")
 ```
 
 # Chicago Budget Analysis
@@ -159,10 +176,11 @@ write_rds(budget,"../input/source/chicago_budget/Chicago Budget.Rds")
 ```{r}
 
 #read data
-budget <- read_rds("../input/source/chicago_budget/Chicago Budget.Rds")
+budget <- read_rds("./input/source/chicago_budget/Chicago Budget.Rds")
 ```
 
-# Total Budget
+## Total Budget
+
 ```{r}
 # calculate the total budget by year
 budget_summary <- budget %>%
@@ -178,8 +196,9 @@ budget_summary %>%
  labs(title = "City of Chicago Budget",subtitle = "Employee Salaries", y="Dollars (in Billions)",x="")
 ```
 
-# Top Departments
+## Top Departments
 By addind up the budgets for all of the years in our dataset, by department, we can see which departments have had the largest budgets.
+
 ```{r}
 # total budget by department
 TopDepartments <- budget %>%
@@ -198,6 +217,7 @@ TopDepartments %>%
 ```
 
 Then we can dive deeper into the top 10 departments to see how their budgets have changed over time.
+
 ```{r}
 budget[budget$`DEPARTMENT DESCRIPTION` %in% TopDepartments$Department,] %>% 
   
@@ -212,8 +232,6 @@ summarise(total = sum(`TOTAL BUDGETED AMOUNT`)) %>%
   
 ```
 
-
-
-# Top Paying Jobs
+## Top Paying Jobs
 
 
