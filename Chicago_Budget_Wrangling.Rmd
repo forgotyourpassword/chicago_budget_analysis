@@ -85,6 +85,7 @@ The graphic below shows the number of unique department names.
 # are department names consistent?
 budget %>% 
   distinct(`DEPARTMENT DESCRIPTION`,`DEPARTMENT CODE`) %>% 
+  arrange(-`DEPARTMENT CODE`)
   group_by(`DEPARTMENT CODE`) %>% 
   summarise(count = n()) %>% 
   filter(count >1) %>% 
@@ -100,7 +101,7 @@ To make it so the department names are consistent across years, we create a CSV 
 ```{r}
 # make department names consistent
   ## load the mapping table
-  DepartmentNameMap <- read.csv("./input/source/budget/Department Mapping Table.csv",stringsAsFactors = F)
+  DepartmentNameMap <- read.csv("./input/mapping/Department Mapping Table.csv",stringsAsFactors = F)
 
   ## use the mapping table to replace the production data
     for (row in 1:NROW(DepartmentNameMap)) {
@@ -151,7 +152,7 @@ Then, using a for loop, we can replace the Job Title for every record that match
 ```{r}
  # make job titles consistent
   ## load the mapping table
- JobTitleMap <- read_csv("./input/source/budget/Job Title Mapping Table.csv")
+ JobTitleMap <- read_csv("./input/mapping/Job Title Mapping Table.csv")
 
 
   ## use the mapping table to replace the production data
