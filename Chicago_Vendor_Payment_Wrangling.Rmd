@@ -1,0 +1,81 @@
+---
+title: "Chicago Vendor Payments Wrangling"
+author: "Michael Molloy"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_folding: hide
+    highlight: tango
+    number_sections: yes
+    theme: cerulean
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+    includes:
+          after_body: "./assets/html/footer.html"
+    
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r include=FALSE}
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(kableExtra)
+library(stringdist)
+library(reshape2)
+library(stringr)
+```
+#Chicago Vendor Payments Data 
+The City of Chicago publishes dozens of datasets every year through their data portal (https://data.cityofchicago.org/).
+
+# Loading Source Data
+Source data was exported from the Chicago data portal into CSV format. The file was loaded into R as a dataframe. 
+```{r}
+# read data
+VendorPayments <- read_csv("./input/source/vendor payments/Payments.csv")
+```
+
+# Data Wrangling
+Before any analysis can be performed on the dataset we need to tidy up the data. 
+
+```{r}
+str(VendorPayments)
+```
+
+## Mismatched Department Names
+Over time, the city of Chicago has changed the exact text they use to describe departments.  While the numerical department code has stayed the same, it would be helpful if the department name text was consistent in our dataset. 
+
+The list below shows the number of unique department names. 
+
+```{r}
+# are department names consistent?
+VendorPayments %>% 
+  distinct(`DEPARTMENT NAME`) %>% 
+  select(`DEPARTMENT NAME`)
+```
+
+To make it so the department names are consistent, we create a CSV file to map the original text and the text we want to change it to. Then a for loop is used to go through every record in the dataset to find and replace based on our mapping CSV file.  We used the city website's list of departments as a reference (https://www.chicago.gov/city/en/depts.html)
+
+```{r}
+# make department names consistent
+  ## load the mapping table
+  DepartmentNameMap <- read.csv("./input/mapping/Department Mapping Table.csv",stringsAsFactors = F)
+
+  ## use the mapping table to replace the production data
+    for (row in 1:NROW(DepartmentNameMap)) {
+      from <- DepartmentNameMap[row,1]
+      to <- DepartmentNameMap[row,2]
+      VendorPayments$`DEPARTMENT NAME` <- str_replace(VendorPayments$`DEPARTMENT NAME`,from,to)
+    }
+```
+
+## Saving the Data
+Once we've finished with our data wrangling we can save our tidy data to a single RDS file and begin our analysis.
+
+```{r}
+# write the output file
+write_rds(VendorPayments,"./input/source/vendor payments/Vendor Payments.Rds")
+```

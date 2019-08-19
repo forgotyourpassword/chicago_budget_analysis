@@ -1,0 +1,90 @@
+---
+title: "Chicago Vendor Payment Analysis"
+author: "Michael Molloy"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_folding: hide
+    highlight: tango
+    number_sections: yes
+    theme: cerulean
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+    includes:
+          after_body: "./assets/html/footer.html"
+    
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r include=FALSE}
+library(tidyverse)
+library(magrittr)
+```
+
+# Chicago Employee Analysis
+
+```{r}
+
+#read data
+VendorPayments <- read_rds("./input/source/vendor payments/Vendor Payments.Rds")
+```
+
+## Total Budget
+
+```{r}
+# calculate the total budget by year
+VendorPayments %>%
+  filter(`Annual Salary` > 0) %>% 
+  select(Name,`Job Titles`,Department, `Annual Salary`) %>% 
+  arrange(-`Annual Salary`)
+```
+
+## Top Departments
+By addind up the budgets for all of the years in our dataset, by department, we can see which departments have had the largest budgets.
+
+```{r}
+# total budget by department
+TopDepartments <- budget %>%
+  group_by(Department = `DEPARTMENT DESCRIPTION`) %>% 
+  summarize(total = sum(`TOTAL BUDGETED AMOUNT`)) %>%
+  arrange(desc(total)) %>%
+  head(10) %>% 
+  mutate(total = total/1000000000)
+
+TopDepartments %>% 
+  ggplot(aes(reorder(Department,total),total, fill = as.factor(total))) +
+  geom_col() +
+  guides(fill=FALSE)+
+  coord_flip() + 
+  labs(title = "Top Departments", subtitle = "Total Budget Amounts 2011-2019", x= "",y="$(in billions)")
+```
+
+Then we can dive deeper into the top 10 departments to see how their budgets have changed over time.
+
+```{r}
+budget[budget$`DEPARTMENT DESCRIPTION` %in% TopDepartments$Department,] %>% 
+  
+  group_by(Department = `DEPARTMENT DESCRIPTION`,YEAR) %>% 
+summarise(total = sum(`TOTAL BUDGETED AMOUNT`)) %>% 
+  mutate(total = total/1000000) %>% 
+    ggplot(aes(YEAR,total)) +
+    geom_line() +
+  facet_wrap(~Department, scales = "free") +
+   scale_x_continuous(breaks = c(2011,2019)) +
+    labs(title = "Top Department Budgets Over time", subtitle = "Chicago Budget Data 2011-2019", x= "",y="$(in millions)")
+  
+```
+
+## Top Paying Jobs
+
+```{r}
+# total budget by department
+budget %>%
+  select(`TITLE DESCRIPTION`,`BUDGETED PAY RATE`, `DEPARTMENT DESCRIPTION`,`DIVISION DESCRIPTION`,`SECTION DESCRIPTION`,`SUB-SECTION DESCRIPTION`,YEAR) %>% 
+  arrange(-`BUDGETED PAY RATE`)
+```
+
+
