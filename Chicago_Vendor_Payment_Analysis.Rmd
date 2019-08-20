@@ -22,6 +22,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r include=FALSE}
 library(tidyverse)
 library(magrittr)
+library(lubridate)
 ```
 
 # Chicago Employee Analysis
@@ -36,55 +37,83 @@ VendorPayments <- read_rds("./input/source/vendor payments/Vendor Payments.Rds")
 
 ```{r}
 # calculate the total budget by year
-VendorPayments %>%
-  filter(`Annual Salary` > 0) %>% 
-  select(Name,`Job Titles`,Department, `Annual Salary`) %>% 
-  arrange(-`Annual Salary`)
+
+VendorPayments%>% 
+  mutate(Month = month(`CHECK DATE`),
+         Year = year(`CHECK DATE`)) %>% 
+  filter(Year == 2018) %>% 
+  group_by(Year,Month) %>% 
+  summarize(Count = n(), Amount = sum(AMOUNT)/100000000) %>% 
+ggplot(aes(Month, Amount, size = Count)) +
+  geom_point() +
+  scale_size_continuous(labels = scales::comma, breaks = c(25000,50000,100000,200000)) +
+  scale_x_continuous(breaks = 1:12) +
+  labs(title = "City of Chicago Vendor Payments", subtitle = "Year 2018", x = "Month", y = "Total Spend (in $100M)", size = "# of transactions")
 ```
 
+```{r}
+VendorPayments%>% 
+  mutate(Month = month(`CHECK DATE`),
+         Year = year(`CHECK DATE`)) %>% 
+  filter(Year == 2018) %>% 
+  group_by(Year,Month) %>% 
+  summarize(Count = n(), Amount = sum(AMOUNT), Average = mean(AMOUNT))  %>% 
+  arrange(-Average)
+```
+
+
+
 ## Top Departments
-By addind up the budgets for all of the years in our dataset, by department, we can see which departments have had the largest budgets.
+By addind up the budgets for all of the years in our dataset, by department, we can see which departments have had the largest vendor payments
 
 ```{r}
 # total budget by department
-TopDepartments <- budget %>%
-  group_by(Department = `DEPARTMENT DESCRIPTION`) %>% 
-  summarize(total = sum(`TOTAL BUDGETED AMOUNT`)) %>%
-  arrange(desc(total)) %>%
-  head(10) %>% 
-  mutate(total = total/1000000000)
+TopDepartments <- VendorPayments %>%
+  filter(`DEPARTMENT NAME` != "NA") %>% 
+  group_by(Department = `DEPARTMENT NAME`) %>% 
+  summarize(Amount = sum(AMOUNT)) %>%
+  arrange(desc(Amount)) %>%
+  head(12) %>% 
+  mutate(Amount = Amount/1000000000)
 
 TopDepartments %>% 
-  ggplot(aes(reorder(Department,total),total, fill = as.factor(total))) +
+  ggplot(aes(reorder(Department,Amount),Amount, fill = as.factor(Amount))) +
   geom_col() +
   guides(fill=FALSE)+
   coord_flip() + 
-  labs(title = "Top Departments", subtitle = "Total Budget Amounts 2011-2019", x= "",y="$(in billions)")
+  labs(title = "Top Vendor Payments", subtitle = "by Department", x= "",y = "$(in billions)")
 ```
 
 Then we can dive deeper into the top 10 departments to see how their budgets have changed over time.
 
 ```{r}
-budget[budget$`DEPARTMENT DESCRIPTION` %in% TopDepartments$Department,] %>% 
-  
-  group_by(Department = `DEPARTMENT DESCRIPTION`,YEAR) %>% 
-summarise(total = sum(`TOTAL BUDGETED AMOUNT`)) %>% 
-  mutate(total = total/1000000) %>% 
-    ggplot(aes(YEAR,total)) +
+VendorPayments %>% 
+  filter(VendorPayments$`DEPARTMENT NAME` %in% TopDepartments$Department) %>% 
+  filter(`DEPARTMENT NAME` != "NA") %>% 
+  filter(year(`CHECK DATE`) == 2018) %>% 
+  group_by(Department = `DEPARTMENT NAME`, Month = month(`CHECK DATE`)) %>% 
+
+summarise(Amount = sum(AMOUNT)) %>% 
+  mutate(Amount = Amount/1000000) %>% 
+    ggplot(aes(Month,Amount)) +
     geom_line() +
+  scale_x_continuous(breaks = c(3,6,9,12)) +
   facet_wrap(~Department, scales = "free") +
-   scale_x_continuous(breaks = c(2011,2019)) +
-    labs(title = "Top Department Budgets Over time", subtitle = "Chicago Budget Data 2011-2019", x= "",y="$(in millions)")
+    labs(title = "Vendor Payments", subtitle = "by Department",caption = "City of Chicago, 2018", x= "",y="$(in millions)")
   
 ```
 
-## Top Paying Jobs
+## Top Paid Vendors
 
 ```{r}
 # total budget by department
-budget %>%
-  select(`TITLE DESCRIPTION`,`BUDGETED PAY RATE`, `DEPARTMENT DESCRIPTION`,`DIVISION DESCRIPTION`,`SECTION DESCRIPTION`,`SUB-SECTION DESCRIPTION`,YEAR) %>% 
-  arrange(-`BUDGETED PAY RATE`)
+VendorPayments %>%
+  filter(year(`CHECK DATE`) == 2018) %>% 
+group_by(`VENDOR NAME`) %>% 
+  summarize(Count = n(), Amount = sum(AMOUNT), Average = mean(AMOUNT)) %>% 
+  arrange(-Average) %>% 
+  head(20)
+
 ```
 
 

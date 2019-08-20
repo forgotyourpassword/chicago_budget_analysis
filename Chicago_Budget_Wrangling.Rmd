@@ -85,7 +85,6 @@ The graphic below shows the number of unique department names.
 # are department names consistent?
 budget %>% 
   distinct(`DEPARTMENT DESCRIPTION`,`DEPARTMENT CODE`) %>% 
-  arrange(-`DEPARTMENT CODE`)
   group_by(`DEPARTMENT CODE`) %>% 
   summarise(count = n()) %>% 
   filter(count >1) %>% 

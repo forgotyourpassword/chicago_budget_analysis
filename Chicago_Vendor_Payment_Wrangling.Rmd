@@ -72,6 +72,20 @@ To make it so the department names are consistent, we create a CSV file to map t
     }
 ```
 
+# Removing Yearly Summaries
+There are `r VendorPayments[grep("^[0-9]{4}$",VendorPayments$`CHECK DATE`),]` rows that contain "summarized" data, by year according to the Check Date field. We'll filter these out so that only vendor payments with a sepecified month/day/year remain.
+
+```{r}
+VendorPayments <- VendorPayments[!grepl("^[0-9]{4}$",VendorPayments$`CHECK DATE`),]
+```
+
+Now we can change the format of the Check Date field from character to Date.
+
+```{r}
+VendorPayments$`CHECK DATE` <- lubridate::mdy(VendorPayments$`CHECK DATE`)
+head(VendorPayments$`CHECK DATE`)
+```
+
 ## Saving the Data
 Once we've finished with our data wrangling we can save our tidy data to a single RDS file and begin our analysis.
 
